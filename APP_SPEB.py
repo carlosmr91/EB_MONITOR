@@ -71,6 +71,66 @@ for col, new_col in columns_to_group.items():
 #-----------------SECCION DE GRAFICOS-------------------------
 #-------------------------------------------------------------    
 
+# Crear la figura del gráfico con subplots
+plot_RPM = make_subplots(specs=[[{"secondary_y": False}]])
+
+# Seleccionar datos para cada pozo y añadirlos al gráfico
+for pozo in boton_pozoID:
+    df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo]
+    plot_RPM.add_trace(
+        go.Scatter(
+            x=df_pozo['Fecha'], 
+            y=df_pozo['RPM'], 
+            mode='lines+markers', 
+            name=pozo,
+            marker=dict(symbol='cross', size=5)  # Ajustar el símbolo del marcador
+        ),
+        secondary_y=False
+    )
+
+# Calcular el valor máximo del eje y y añadir un margen
+max_y = df_filtro['RPM'].max() * 1.1
+
+# Diseño del gráfico
+plot_RPM.update_layout(
+    title="RPM",
+    width=800,
+    height=250,
+    paper_bgcolor="#ECECEC",
+    margin=dict(l=0, r=0, t=40, b=0),
+    yaxis=dict(
+        range=[0, max_y], 
+        title="RPM", 
+        side='left', 
+        showgrid=True, 
+        gridcolor='LightGray', 
+        gridwidth=1, 
+        zeroline=True, 
+        zerolinecolor='LightGray', 
+        zerolinewidth=1
+    ),
+    xaxis=dict(
+        title="Fecha", 
+        showgrid=True, 
+        gridcolor='LightGray', 
+        gridwidth=1, 
+        zeroline=True, 
+        zerolinecolor='Black', 
+        zerolinewidth=1
+    ),
+    legend=dict(
+        font=dict(
+            size=15,
+            family="Calibri",
+            color="black",
+        )
+    )
+)
+
+# Diseño del título del eje y
+plot_RPM.update_yaxes(title_text="RPM", secondary_y=False)
+
+
 # GRAFICO BRUTA DIARIO 
 plot_BrutaDiaria = make_subplots(specs=[[{"secondary_y": False}]])
 
@@ -857,6 +917,7 @@ with tabs[0]:
         st.plotly_chart( plot_AceiteDiario )
         st.plotly_chart( plot_AguaDiaria )
         st.plotly_chart( plot_GasDiario )
+        st.plotly_chart( plot_RPM )
     with c2:
         st.plotly_chart( plot_BrutaAc )
         st.plotly_chart( plot_NetaAc )
@@ -867,6 +928,7 @@ with tabs[0]:
 with tabs[1]:
     c1,c2,c3 = st.columns(3)
     with c1:
+        #st.plotly_chart( plot_RPM2 )
         st.plotly_chart(plot_TNp)
         st.plotly_chart(plot_QoNp)
     with c2:

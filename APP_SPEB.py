@@ -333,7 +333,7 @@ for pozo in boton_pozoID:
     extended_df['BrutoAcumulado Mbbl'].fillna(max_value, inplace=True)
     
     # Agregar carry forward al DataFrame extendido
-    extended_df['BrutoAcumulado Mbbl'] += carry_forward
+    #extended_df['BrutoAcumulado Mbbl'] += carry_forward
     
     # Actualizar carry forward para el siguiente pozo
     carry_forward = extended_df['BrutoAcumulado Mbbl'].iloc[-1]
@@ -404,7 +404,7 @@ for pozo in boton_pozoID:
     extended_df['AceiteAcumulado Mbbl'] += carry_forward
     
     # Actualizar carry forward para el siguiente pozo
-    carry_forward = extended_df['AceiteAcumulado Mbbl'].iloc[-1]
+    #carry_forward = extended_df['AceiteAcumulado Mbbl'].iloc[-1]
     
     # Añadir la traza al gráfico
     plot_NetaAc.add_trace(
@@ -469,7 +469,7 @@ for pozo in boton_pozoID:
     extended_df['GasAcumulado MMpc'].fillna(max_value, inplace=True)
     
     # Agregar carry forward al DataFrame extendido
-    extended_df['GasAcumulado MMpc'] += carry_forward
+    #extended_df['GasAcumulado MMpc'] += carry_forward
     
     # Actualizar carry forward para el siguiente pozo
     carry_forward = extended_df['GasAcumulado MMpc'].iloc[-1]
@@ -540,7 +540,7 @@ for pozo in boton_pozoID:
     extended_df['AguaAcumulada Mbbl'] += carry_forward
     
     # Actualizar carry forward para el siguiente pozo
-    carry_forward = extended_df['AguaAcumulada Mbbl'].iloc[-1]
+    #carry_forward = extended_df['AguaAcumulada Mbbl'].iloc[-1]
     
     # Añadir la traza al gráfico
     plot_AguaAc.add_trace(

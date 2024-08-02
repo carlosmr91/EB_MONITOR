@@ -620,7 +620,7 @@ plot_AguaAc.update_layout(
 )
 
 # DISEÑO TITULO DE EJES
-plot_AguaAc.update_yaxes(title_text="Agua Acumulada Mbbl", secondary_y=False)
+plot_AguaAc.update_yaxes(title_text="Agua Acumulada (Mbbl)", secondary_y=False)
 
 #_________________________________________________________________________________
 

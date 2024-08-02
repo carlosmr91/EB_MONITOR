@@ -74,122 +74,147 @@ for col, new_col in columns_to_group.items():
 # Crear la figura del gráfico con subplots
 plot_RPM = make_subplots(specs=[[{"secondary_y": False}]])
 
-# Seleccionar datos para cada pozo y añadirlos al gráfico
-for pozo in boton_pozoID:
-    df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo]
-    plot_RPM.add_trace(
-        go.Scatter(
-            x=df_pozo['Fecha'], 
-            y=df_pozo['RPM'], 
-            mode='lines+markers', 
-            name=pozo,
-            marker=dict(symbol='cross', size=5)  # Ajustar el símbolo del marcador
+# Verificar si 'Fecha' tiene información y no contiene valores NaT
+if df_filtro['Fecha'].notna().any():
+    # Ordenar el DataFrame por 'Fecha' y eliminar NaT
+    df_filtro = df_filtro.dropna(subset=['Fecha']).sort_values(by='Fecha')
+    
+    # Seleccionar datos para cada pozo y añadirlos al gráfico
+    for pozo in boton_pozoID:
+        df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo]
+        
+        # Verificar si 'Fecha' tiene datos válidos
+        if not df_pozo.empty and df_pozo['Fecha'].notna().any():
+            plot_RPM.add_trace(
+                go.Scatter(
+                    x=df_pozo['Fecha'],
+                    y=df_pozo['RPM'],
+                    mode='lines+markers',
+                    name=pozo,
+                    marker=dict(symbol='cross', size=5)  # Ajustar el símbolo del marcador
+                ),
+                secondary_y=False
+            )
+
+    # Calcular el valor máximo del eje y y añadir un margen
+    max_y = df_filtro['RPM'].max() * 1.1
+
+    # Diseño del gráfico
+    plot_RPM.update_layout(
+        title="RPM",
+        width=800,
+        height=250,
+        paper_bgcolor="#ECECEC",
+        margin=dict(l=0, r=0, t=40, b=0),
+        yaxis=dict(
+            range=[0, max_y],
+            title="RPM",
+            side='left',
+            showgrid=True,
+            gridcolor='LightGray',
+            gridwidth=1,
+            zeroline=True,
+            zerolinecolor='LightGray',
+            zerolinewidth=1
         ),
-        secondary_y=False
-    )
-
-# Calcular el valor máximo del eje y y añadir un margen
-max_y = df_filtro['RPM'].max() * 1.1
-
-# Diseño del gráfico
-plot_RPM.update_layout(
-    title="RPM",
-    width=800,
-    height=250,
-    paper_bgcolor="#ECECEC",
-    margin=dict(l=0, r=0, t=40, b=0),
-    yaxis=dict(
-        range=[0, max_y], 
-        title="RPM", 
-        side='left', 
-        showgrid=True, 
-        gridcolor='LightGray', 
-        gridwidth=1, 
-        zeroline=True, 
-        zerolinecolor='LightGray', 
-        zerolinewidth=1
-    ),
-    xaxis=dict(
-        title="Fecha", 
-        showgrid=True, 
-        gridcolor='LightGray', 
-        gridwidth=1, 
-        zeroline=True, 
-        zerolinecolor='Black', 
-        zerolinewidth=1
-    ),
-    legend=dict(
-        font=dict(
-            size=15,
-            family="Calibri",
-            color="black",
+        xaxis=dict(
+            title="Fecha",
+            showgrid=True,
+            gridcolor='LightGray',
+            gridwidth=1,
+            zeroline=True,
+            zerolinecolor='Black',
+            zerolinewidth=1
+        ),
+        legend=dict(
+            font=dict(
+                size=15,
+                family="Calibri",
+                color="black",
+            )
         )
     )
-)
 
-# Diseño del título del eje y
-plot_RPM.update_yaxes(title_text="RPM", secondary_y=False)
-
+    # Diseño del título del eje y
+    plot_RPM.update_yaxes(title_text="RPM", secondary_y=False)
 
 # GRAFICO BRUTA DIARIO 
 plot_BrutaDiaria = make_subplots(specs=[[{"secondary_y": False}]])
 
-# SELECCIONAR DATOS PARA CADA POZO
-for pozo in boton_pozoID:
-    df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo]
+# Verificar si 'Fecha' tiene información y no contiene valores NaT
+if df_filtro['Fecha'].notna().any():
+    # Asegurarse de que el DataFrame esté ordenado por fecha y sin valores NaT en 'Fecha'
+    df_filtro = df_filtro.dropna(subset=['Fecha']).sort_values(by='Fecha')
+
+    # SELECCIONAR DATOS PARA CADA POZO
+    for pozo in boton_pozoID:
+        df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo]
+
+        # Verificar si 'Fecha' tiene información y no contiene valores NaT
+        if df_pozo['Fecha'].notna().any():
+            plot_BrutaDiaria.add_trace(
+                go.Scatter(x=df_pozo['Fecha'], y=df_pozo['BrutoDiario bpd'], mode='lines', name=pozo),
+                secondary_y=False,
+            )
+
+    # SELECCIONAR DATOS PARA CADA POZO (SUMA PERFIL)
     plot_BrutaDiaria.add_trace(
-        go.Scatter(x=df_pozo['Fecha'], y=df_pozo['BrutoDiario bpd'], mode='lines', name=pozo),
+        go.Scatter(x=df_filtro['Fecha'], y=df_filtro['SumaBruta_bpd'], mode='markers', name='Suma Bruta',
+                   marker=dict(color="black", symbol='cross', size=4)),
         secondary_y=False,
     )
 
-# SELECCIONAR DATOS PARA CADA POZO (SUMA PERFIL)
-plot_BrutaDiaria.add_trace(
-    go.Scatter(x=df_filtro['Fecha'], y=df_filtro['SumaBruta_bpd'], mode='markers', name='Suma Bruta',
-               marker=dict(color="black", symbol='cross', size=4)),
-    secondary_y=False,
-)
+    # CALCULAR EL MAXIMO DEL EJE Y
+    max_y = df_filtro[['BrutoDiario bpd', 'SumaBruta_bpd']].max().max() * 1.1
 
-# CALCULAR EL MAXIMO DEL EJE Y
-max_y = df_filtro[['BrutoDiario bpd', 'SumaBruta_bpd']].max().max()* 1.1
-
-# DISEÑO DE GRAFICO
-plot_BrutaDiaria.update_layout(
-    title="PRODUCCIÓN BRUTA",
-    width=800,
-    height=250,
-    paper_bgcolor="#ECECEC",
-    margin=dict(l=0, r=0, t=40, b=0),
-    yaxis=dict(range=[0, max_y], title="Bruta (bpd)", side='left', showgrid=True, gridcolor='LightGray', gridwidth=1, zeroline=True, zerolinecolor='LightGray', zerolinewidth=1),
-    xaxis=dict(title="Fecha", showgrid=True, gridcolor='LightGray', gridwidth=1, zeroline=True, zerolinecolor='Black', zerolinewidth=1),
-    legend=dict(
-        font=dict(
-            size=15,  # Aquí puedes cambiar el tamaño de la fuente de la leyenda
-            family="Calibri",  # Familia de fuentes que soporta negritas
-            color="black",
+    # DISEÑO DE GRAFICO
+    plot_BrutaDiaria.update_layout(
+        title="PRODUCCIÓN BRUTA",
+        width=800,
+        height=250,
+        paper_bgcolor="#ECECEC",
+        margin=dict(l=0, r=0, t=40, b=0),
+        yaxis=dict(range=[0, max_y], title="Bruta (bpd)", side='left', showgrid=True, gridcolor='LightGray', gridwidth=1, zeroline=True, zerolinecolor='LightGray', zerolinewidth=1),
+        xaxis=dict(title="Fecha", showgrid=True, gridcolor='LightGray', gridwidth=1, zeroline=True, zerolinecolor='Black', zerolinewidth=1),
+        legend=dict(
+            font=dict(
+                size=15,  # Aquí puedes cambiar el tamaño de la fuente de la leyenda
+                family="Calibri",  # Familia de fuentes que soporta negritas
+                color="black",
+            )
         )
     )
-)
 
-# DISEÑO TITULO DE EJES
-plot_BrutaDiaria.update_yaxes(title_text="Bruta (bpd)", secondary_y=False)
+    # DISEÑO TITULO DE EJES
+    plot_BrutaDiaria.update_yaxes(title_text="Bruta (bpd)", secondary_y=False)
+else:
+    print("No hay datos disponibles en la columna 'Fecha'.")
 
 # GRAFICO ACEITE DIARIO 
 plot_AceiteDiario = make_subplots(specs=[[{"secondary_y": False}]])
 
-# SELECCIONAR DATOS PARA CADA POZO
-for pozo in boton_pozoID:
-    df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo]
+# Verificar si 'Fecha' tiene información y no contiene valores NaT
+if df_filtro['Fecha'].notna().any():
+    # Asegurarse de que el DataFrame esté ordenado por fecha y sin valores NaT en 'Fecha'
+    df_filtro = df_filtro.dropna(subset=['Fecha']).sort_values(by='Fecha')
+
+    # SELECCIONAR DATOS PARA CADA POZO
+    for pozo in boton_pozoID:
+        df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo]
+
+        # Verificar si 'Fecha' tiene información y no contiene valores NaT
+        if df_pozo['Fecha'].notna().any():
+            plot_AceiteDiario.add_trace(
+                go.Scatter(x=df_pozo['Fecha'], y=df_pozo['AceiteDiario bpd'], mode='lines', name=pozo),
+                secondary_y=False,
+            )
+
+    # SELECCIONAR DATOS PARA CADA POZO (SUMA PERFIL)
     plot_AceiteDiario.add_trace(
-        go.Scatter(x=df_pozo['Fecha'], y=df_pozo['AceiteDiario bpd'], mode='lines', name=pozo),
+        go.Scatter(x=df_filtro['Fecha'], y=df_filtro['SumaAceite_bpd'], mode='markers', name='Suma Neta',
+                   marker=dict(color="black", symbol='cross', size=4)),
         secondary_y=False,
     )
-
-# SELECCIONAR DATOS PARA CADA POZO (SUMA PERFIL)
-plot_AceiteDiario.add_trace(
-    go.Scatter(x=df_filtro['Fecha'], y=df_filtro['SumaAceite_bpd'], mode='markers', name='Suma Aceite',
-               marker=dict(color="black", symbol='cross', size=4)),
-    secondary_y=False,
-)
 
 # CALCULAR EL MAXIMO DEL EJE Y
 max_y = df_filtro[['AceiteDiario bpd', 'SumaAceite_bpd']].max().max()* 1.1
@@ -219,20 +244,28 @@ plot_AceiteDiario.update_yaxes(title_text="Aceite (bpd)", secondary_y=False)
 # GRAFICO GAS DIARIO 
 plot_GasDiario = make_subplots(specs=[[{"secondary_y": False}]])
 
-# SELECCIONAR DATOS PARA CADA POZO
-for pozo in boton_pozoID:
-    df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo]
+# Verificar si 'Fecha' tiene información y no contiene valores NaT
+if df_filtro['Fecha'].notna().any():
+    # Asegurarse de que el DataFrame esté ordenado por fecha y sin valores NaT en 'Fecha'
+    df_filtro = df_filtro.dropna(subset=['Fecha']).sort_values(by='Fecha')
+
+    # SELECCIONAR DATOS PARA CADA POZO
+    for pozo in boton_pozoID:
+        df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo]
+
+        # Verificar si 'Fecha' tiene información y no contiene valores NaT
+        if df_pozo['Fecha'].notna().any():
+            plot_GasDiario.add_trace(
+                go.Scatter(x=df_pozo['Fecha'], y=df_pozo['GasDiario pcd'], mode='lines', name=pozo),
+                secondary_y=False,
+            )
+
+    # SELECCIONAR DATOS PARA CADA POZO (SUMA PERFIL)
     plot_GasDiario.add_trace(
-        go.Scatter(x=df_pozo['Fecha'], y=df_pozo['GasDiario pcd'], mode='lines', name=pozo),
+        go.Scatter(x=df_filtro['Fecha'], y=df_filtro['SumaGas_pcd'], mode='markers', name='Suma Gas',
+                   marker=dict(color="black", symbol='cross', size=4)),
         secondary_y=False,
     )
-
-# SELECCIONAR DATOS PARA CADA POZO (SUMA PERFIL)
-plot_GasDiario.add_trace(
-    go.Scatter(x=df_filtro['Fecha'], y=df_filtro['SumaGas_pcd'], mode='markers', name='Suma Gas',
-               marker=dict(color="black", symbol='cross', size=4)),
-    secondary_y=False,
-)
 
 # CALCULAR EL MAXIMO DEL EJE Y
 max_y = df_filtro[['GasDiario pcd', 'SumaGas_pcd']].max().max()* 1.1
@@ -258,23 +291,31 @@ plot_GasDiario.update_layout(
 # DISEÑO TITULO DE EJES
 plot_GasDiario.update_yaxes(title_text="Gas (pcd)", secondary_y=False)
 
-# GRAFICO AGUA DIARIA 
+# # GRAFICO AGUA DIARIA 
 plot_AguaDiaria = make_subplots(specs=[[{"secondary_y": False}]])
 
-# SELECCIONAR DATOS PARA CADA POZO
-for pozo in boton_pozoID:
-    df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo]
+# Verificar si 'Fecha' tiene información y no contiene valores NaT
+if df_filtro['Fecha'].notna().any():
+    # Asegurarse de que el DataFrame esté ordenado por fecha y sin valores NaT en 'Fecha'
+    df_filtro = df_filtro.dropna(subset=['Fecha']).sort_values(by='Fecha')
+
+    # SELECCIONAR DATOS PARA CADA POZO
+    for pozo in boton_pozoID:
+        df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo]
+
+        # Verificar si 'Fecha' tiene información y no contiene valores NaT
+        if df_pozo['Fecha'].notna().any():
+            plot_AguaDiaria.add_trace(
+                go.Scatter(x=df_pozo['Fecha'], y=df_pozo['AguaDiaria bpd'], mode='lines', name=pozo),
+                secondary_y=False,
+            )
+
+    # SELECCIONAR DATOS PARA CADA POZO (SUMA PERFIL)
     plot_AguaDiaria.add_trace(
-        go.Scatter(x=df_pozo['Fecha'], y=df_pozo['AguaDiaria bpd'], mode='lines', name=pozo),
+        go.Scatter(x=df_filtro['Fecha'], y=df_filtro['SumaAgua_bpd'], mode='markers', name='Suma Agua',
+                   marker=dict(color="black", symbol='cross', size=4)),
         secondary_y=False,
     )
-
-# SELECCIONAR DATOS PARA CADA POZO (SUMA PERFIL)
-plot_AguaDiaria.add_trace(
-    go.Scatter(x=df_filtro['Fecha'], y=df_filtro['SumaAgua_bpd'], mode='markers', name='Suma Agua',
-               marker=dict(color="black", symbol='cross', size=4)),
-    secondary_y=False,
-)
 
 # CALCULAR EL MAXIMO DEL EJE Y
 max_y = df_filtro[['AguaDiaria bpd', 'SumaAgua_bpd']].max().max()* 1.1
@@ -304,52 +345,54 @@ plot_AguaDiaria.update_yaxes(title_text="Agua (bpd)", secondary_y=False)
 #-----------------SECCION DE GRAFICOS ACUMULADA-------------------------
 #-------------------------------------------------------------    
 
-# GRAFICO BRUTA ACUMULADA
+#  GRAFICO BRUTA ACUMULADA
+# Obtener la fecha máxima del DataFrame
 max_date = df_filtro['Fecha'].max()
 # Inicializar la figura
 plot_BrutaAc = make_subplots(specs=[[{"secondary_y": False}]])
-
 # Inicializar carry forward
 carry_forward = 0
 
-# Obtener la fecha máxima del DataFrame
-max_date = df_filtro['Fecha'].max()
-# Ordenar el DataFrame por 'Fecha'
-df_filtro = df_filtro.sort_values(by='Fecha')
+# Verificar si 'Fecha' tiene información y no contiene valores NaT
+if df_filtro['Fecha'].notna().any() and pd.notna(max_date):
+    # Ordenar el DataFrame por 'Fecha'
+    df_filtro = df_filtro.dropna(subset=['Fecha']).sort_values(by='Fecha')
 
-# Iterar sobre cada pozo único
-for pozo in boton_pozoID:
-    # Filtrar datos para el pozo actual
-    df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo].copy()
-    
-    # Obtener el valor máximo de 'BrutoAcumulado Mbbl' para el pozo actual
-    max_value = df_pozo['BrutoAcumulado Mbbl'].max()* 1.1
-    
-    # Crear un DataFrame extendido hasta la fecha más reciente
-    extended_dates = pd.date_range(start=df_pozo['Fecha'].min(), end=max_date, freq='D')
-    extended_df = pd.DataFrame({'Fecha': extended_dates})
-    extended_df = pd.merge(extended_df, df_pozo[['Fecha', 'BrutoAcumulado Mbbl']], on='Fecha', how='left')
-    extended_df['BrutoAcumulado Mbbl'].fillna(method='ffill', inplace=True)
-    extended_df['BrutoAcumulado Mbbl'].fillna(max_value, inplace=True)
-    
-    # Agregar carry forward al DataFrame extendido
-    #extended_df['BrutoAcumulado Mbbl'] += carry_forward
-    
-    # Actualizar carry forward para el siguiente pozo
-    carry_forward = extended_df['BrutoAcumulado Mbbl'].iloc[-1]
-    
-    # Añadir la traza al gráfico
-    plot_BrutaAc.add_trace(
-        go.Scatter(
-            x=extended_df['Fecha'],
-            y=extended_df['BrutoAcumulado Mbbl'],
-            hoverinfo='x+y',
-            mode='none',
-            name=pozo,
-            fill='tonexty',
-            stackgroup='one'
-        ),
-    )
+    # Iterar sobre cada pozo único
+    for pozo in boton_pozoID:
+        # Filtrar datos para el pozo actual
+        df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo].copy()
+        
+        # Verificar si el pozo tiene datos y fechas válidas
+        if df_pozo['Fecha'].notna().any() and pd.notna(df_pozo['Fecha'].min()):
+            # Obtener el valor máximo de 'BrutoAcumulado Mbbl' para el pozo actual
+            max_value = df_pozo['BrutoAcumulado Mbbl'].max() * 1.1
+            
+            # Crear un DataFrame extendido hasta la fecha más reciente
+            extended_dates = pd.date_range(start=df_pozo['Fecha'].min(), end=max_date, freq='D')
+            extended_df = pd.DataFrame({'Fecha': extended_dates})
+            extended_df = pd.merge(extended_df, df_pozo[['Fecha', 'BrutoAcumulado Mbbl']], on='Fecha', how='left')
+            extended_df['BrutoAcumulado Mbbl'].fillna(method='ffill', inplace=True)
+            extended_df['BrutoAcumulado Mbbl'].fillna(max_value, inplace=True)
+            
+            # Agregar carry forward al DataFrame extendido
+            #extended_df['BrutoAcumulado Mbbl'] += carry_forward
+            
+            # Actualizar carry forward para el siguiente pozo
+            carry_forward = extended_df['BrutoAcumulado Mbbl'].iloc[-1]
+            
+            # Añadir la traza al gráfico
+            plot_BrutaAc.add_trace(
+                go.Scatter(
+                    x=extended_df['Fecha'],
+                    y=extended_df['BrutoAcumulado Mbbl'],
+                    hoverinfo='x+y',
+                    mode='none',
+                    name=pozo,
+                    fill='tonexty',
+                    stackgroup='one'
+                ),
+            )
 
 # Diseño del gráfico
 plot_BrutaAc.update_layout(
@@ -357,8 +400,8 @@ plot_BrutaAc.update_layout(
     width=800,
     height=250,
     paper_bgcolor="#ECECEC",
-    margin=dict(l=0, r=0, t=40, b=0),    
-    yaxis=dict(title="Bruta Ac (Mbbl)", side='left', showgrid=True, gridcolor='LightGray', gridwidth=1, zeroline=True, zerolinecolor='LightGray', zerolinewidth=1),
+    margin=dict(l=0, r=0, t=40, b=0),
+    yaxis=dict(title="Bruta Acumulada (Mbbl)", side='left', showgrid=True, gridcolor='LightGray', gridwidth=1, zeroline=True, zerolinecolor='LightGray', zerolinewidth=1),
     xaxis=dict(title="Fecha", showgrid=True, gridcolor='LightGray', gridwidth=1, zeroline=True, zerolinecolor='Black', zerolinewidth=1),
     legend=dict(
         font=dict(
@@ -372,52 +415,53 @@ plot_BrutaAc.update_layout(
 # DISEÑO TITULO DE EJES
 plot_BrutaAc.update_yaxes(title_text="Bruta Acumulada (Mbbl)", secondary_y=False)
 
-
-# GRAFICO NETA ACUMULADA
+# # GRAFICO NETA ACUMULADA
 # Inicializar la figura
 plot_NetaAc = make_subplots(specs=[[{"secondary_y": False}]])
 
 # Inicializar carry forward
 carry_forward = 0
 
-# Obtener la fecha máxima del DataFrame
-max_date = df_filtro['Fecha'].max()
-# Ordenar el DataFrame por 'Fecha'
-df_filtro = df_filtro.sort_values(by='Fecha')
+# Verificar si 'Fecha' tiene información y no contiene valores NaT
+if df_filtro['Fecha'].notna().any() and pd.notna(max_date):
+    # Ordenar el DataFrame por 'Fecha'
+    df_filtro = df_filtro.dropna(subset=['Fecha']).sort_values(by='Fecha')
 
-# Iterar sobre cada pozo único
-for pozo in boton_pozoID:
-    # Filtrar datos para el pozo actual
-    df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo].copy()
-    
-    # Obtener el valor máximo de 'BrutoAcumulado Mbbl' para el pozo actual
-    max_value = df_pozo['AceiteAcumulado Mbbl'].max()* 1.1
-    
-    # Crear un DataFrame extendido hasta la fecha más reciente
-    extended_dates = pd.date_range(start=df_pozo['Fecha'].min(), end=max_date, freq='D')
-    extended_df = pd.DataFrame({'Fecha': extended_dates})
-    extended_df = pd.merge(extended_df, df_pozo[['Fecha', 'AceiteAcumulado Mbbl']], on='Fecha', how='left')
-    extended_df['AceiteAcumulado Mbbl'].fillna(method='ffill', inplace=True)
-    extended_df['AceiteAcumulado Mbbl'].fillna(max_value, inplace=True)
-    
-    # Agregar carry forward al DataFrame extendido
-    extended_df['AceiteAcumulado Mbbl'] += carry_forward
-    
-    # Actualizar carry forward para el siguiente pozo
-    #carry_forward = extended_df['AceiteAcumulado Mbbl'].iloc[-1]
-    
-    # Añadir la traza al gráfico
-    plot_NetaAc.add_trace(
-        go.Scatter(
-            x=extended_df['Fecha'],
-            y=extended_df['AceiteAcumulado Mbbl'],
-            hoverinfo='x+y',
-            mode='none',
-            name=pozo,
-            fill='tonexty',
-            stackgroup='one'
-        ),
-    )
+    # Iterar sobre cada pozo único
+    for pozo in boton_pozoID:
+        # Filtrar datos para el pozo actual
+        df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo].copy()
+        
+        # Verificar si el pozo tiene datos y fechas válidas
+        if df_pozo['Fecha'].notna().any() and pd.notna(df_pozo['Fecha'].min()):
+            # Obtener el valor máximo de 'BrutoAcumulado Mbbl' para el pozo actual
+            max_value = df_pozo['AceiteAcumulado Mbbl'].max() * 1.1
+            
+            # Crear un DataFrame extendido hasta la fecha más reciente
+            extended_dates = pd.date_range(start=df_pozo['Fecha'].min(), end=max_date, freq='D')
+            extended_df = pd.DataFrame({'Fecha': extended_dates})
+            extended_df = pd.merge(extended_df, df_pozo[['Fecha', 'AceiteAcumulado Mbbl']], on='Fecha', how='left')
+            extended_df['AceiteAcumulado Mbbl'].fillna(method='ffill', inplace=True)
+            extended_df['AceiteAcumulado Mbbl'].fillna(max_value, inplace=True)
+            
+            # Agregar carry forward al DataFrame extendido
+            #extended_df['AceiteAcumulado Mbbl'] += carry_forward
+            
+            # Actualizar carry forward para el siguiente pozo
+            carry_forward = extended_df['AceiteAcumulado Mbbl'].iloc[-1]
+            
+            # Añadir la traza al gráfico
+            plot_NetaAc.add_trace(
+                go.Scatter(
+                    x=extended_df['Fecha'],
+                    y=extended_df['AceiteAcumulado Mbbl'],
+                    hoverinfo='x+y',
+                    mode='none',
+                    name=pozo,
+                    fill='tonexty',
+                    stackgroup='one'
+                ),
+            )
 
 # Diseño del gráfico
 plot_NetaAc.update_layout(
@@ -425,8 +469,8 @@ plot_NetaAc.update_layout(
     width=800,
     height=250,
     paper_bgcolor="#E5FDDF",
-    margin=dict(l=0, r=0, t=40, b=0),    
-    yaxis=dict(title="Neta Ac (Mbbl)", side='left', showgrid=True, gridcolor='LightGray', gridwidth=1, zeroline=True, zerolinecolor='LightGray', zerolinewidth=1),
+    margin=dict(l=0, r=0, t=40, b=0),
+    yaxis=dict(title="Neta Acumulada (Mbbl)", side='left', showgrid=True, gridcolor='LightGray', gridwidth=1, zeroline=True, zerolinecolor='LightGray', zerolinewidth=1),
     xaxis=dict(title="Fecha", showgrid=True, gridcolor='LightGray', gridwidth=1, zeroline=True, zerolinecolor='Black', zerolinewidth=1),
     legend=dict(
         font=dict(
@@ -440,61 +484,62 @@ plot_NetaAc.update_layout(
 # DISEÑO TITULO DE EJES
 plot_NetaAc.update_yaxes(title_text="Neta Acumulada (Mbbl)", secondary_y=False)
 
-
-# GRAFICO GAS ACUMULADA
-# Inicializar la figura
+# # GRAFICO GAS ACUMULADA
+# # Inicializar la figura
 plot_GasAc = make_subplots(specs=[[{"secondary_y": False}]])
 
 # Inicializar carry forward
 carry_forward = 0
 
-# Obtener la fecha máxima del DataFrame
-max_date = df_filtro['Fecha'].max()
-# Ordenar el DataFrame por 'Fecha'
-df_filtro = df_filtro.sort_values(by='Fecha')
+# Verificar si 'Fecha' tiene información y no contiene valores NaT
+if df_filtro['Fecha'].notna().any() and pd.notna(max_date):
+    # Ordenar el DataFrame por 'Fecha'
+    df_filtro = df_filtro.dropna(subset=['Fecha']).sort_values(by='Fecha')
 
-# Iterar sobre cada pozo único
-for pozo in boton_pozoID:
-    # Filtrar datos para el pozo actual
-    df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo].copy()
-    
-    # Obtener el valor máximo de 'BrutoAcumulado Mbbl' para el pozo actual
-    max_value = df_pozo['GasAcumulado MMpc'].max()* 1.1
-    
-    # Crear un DataFrame extendido hasta la fecha más reciente
-    extended_dates = pd.date_range(start=df_pozo['Fecha'].min(), end=max_date, freq='D')
-    extended_df = pd.DataFrame({'Fecha': extended_dates})
-    extended_df = pd.merge(extended_df, df_pozo[['Fecha', 'GasAcumulado MMpc']], on='Fecha', how='left')
-    extended_df['GasAcumulado MMpc'].fillna(method='ffill', inplace=True)
-    extended_df['GasAcumulado MMpc'].fillna(max_value, inplace=True)
-    
-    # Agregar carry forward al DataFrame extendido
-    #extended_df['GasAcumulado MMpc'] += carry_forward
-    
-    # Actualizar carry forward para el siguiente pozo
-    carry_forward = extended_df['GasAcumulado MMpc'].iloc[-1]
-    
-    # Añadir la traza al gráfico
-    plot_GasAc.add_trace(
-        go.Scatter(
-            x=extended_df['Fecha'],
-            y=extended_df['GasAcumulado MMpc'],
-            hoverinfo='x+y',
-            mode='none',
-            name=pozo,
-            fill='tonexty',
-            stackgroup='one'
-        ),
-    )
+    # Iterar sobre cada pozo único
+    for pozo in boton_pozoID:
+        # Filtrar datos para el pozo actual
+        df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo].copy()
+        
+        # Verificar si el pozo tiene datos y fechas válidas
+        if df_pozo['Fecha'].notna().any() and pd.notna(df_pozo['Fecha'].min()):
+            # Obtener el valor máximo de 'BrutoAcumulado Mbbl' para el pozo actual
+            max_value = df_pozo['GasAcumulado MMpc'].max() * 1.1
+            
+            # Crear un DataFrame extendido hasta la fecha más reciente
+            extended_dates = pd.date_range(start=df_pozo['Fecha'].min(), end=max_date, freq='D')
+            extended_df = pd.DataFrame({'Fecha': extended_dates})
+            extended_df = pd.merge(extended_df, df_pozo[['Fecha', 'GasAcumulado MMpc']], on='Fecha', how='left')
+            extended_df['GasAcumulado MMpc'].fillna(method='ffill', inplace=True)
+            extended_df['GasAcumulado MMpc'].fillna(max_value, inplace=True)
+            
+            # Agregar carry forward al DataFrame extendido
+            #extended_df['AceiteAcumulado Mbbl'] += carry_forward
+            
+            # Actualizar carry forward para el siguiente pozo
+            carry_forward = extended_df['GasAcumulado MMpc'].iloc[-1]
+            
+            # Añadir la traza al gráfico
+            plot_GasAc.add_trace(
+                go.Scatter(
+                    x=extended_df['Fecha'],
+                    y=extended_df['GasAcumulado MMpc'],
+                    hoverinfo='x+y',
+                    mode='none',
+                    name=pozo,
+                    fill='tonexty',
+                    stackgroup='one'
+                ),
+            )
 
 # Diseño del gráfico
 plot_GasAc.update_layout(
-    title="PRODUCCIÓN DE GAS ACUMULADA",
+    title="PRODUCCIÓN ACUMULADA DE GAS",
     width=800,
     height=250,
     paper_bgcolor="#FEEDE8",
-    margin=dict(l=0, r=0, t=40, b=0),    
-    yaxis=dict(title="Gas Ac (MMpc)", side='left', showgrid=True, gridcolor='LightGray', gridwidth=1, zeroline=True, zerolinecolor='LightGray', zerolinewidth=1),
+    margin=dict(l=0, r=0, t=40, b=0),
+    yaxis=dict(title="Gas Acumulado (Mbbl)", side='left', showgrid=True, gridcolor='LightGray', gridwidth=1, zeroline=True, zerolinecolor='LightGray', zerolinewidth=1),
     xaxis=dict(title="Fecha", showgrid=True, gridcolor='LightGray', gridwidth=1, zeroline=True, zerolinecolor='Black', zerolinewidth=1),
     legend=dict(
         font=dict(
@@ -506,63 +551,64 @@ plot_GasAc.update_layout(
 )
 
 # DISEÑO TITULO DE EJES
-plot_GasAc.update_yaxes(title_text="Gas Acumulada (MMpc)", secondary_y=False)
+plot_GasAc.update_yaxes(title_text="Gas Acumulado (MMpc)", secondary_y=False)
 
-
-# GRAFICO AGUA ACUMULADA
+# # GRAFICO AGUA ACUMULADA
 # Inicializar la figura
 plot_AguaAc = make_subplots(specs=[[{"secondary_y": False}]])
 
 # Inicializar carry forward
 carry_forward = 0
 
-# Obtener la fecha máxima del DataFrame
-max_date = df_filtro['Fecha'].max()
-# Ordenar el DataFrame por 'Fecha'
-df_filtro = df_filtro.sort_values(by='Fecha')
+# Verificar si 'Fecha' tiene información y no contiene valores NaT
+if df_filtro['Fecha'].notna().any() and pd.notna(max_date):
+    # Ordenar el DataFrame por 'Fecha'
+    df_filtro = df_filtro.dropna(subset=['Fecha']).sort_values(by='Fecha')
 
-# Iterar sobre cada pozo único
-for pozo in boton_pozoID:
-    # Filtrar datos para el pozo actual
-    df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo].copy()
-    
-    # Obtener el valor máximo de 'BrutoAcumulado Mbbl' para el pozo actual
-    max_value = df_pozo['AguaAcumulada Mbbl'].max()* 1.1
-    
-    # Crear un DataFrame extendido hasta la fecha más reciente
-    extended_dates = pd.date_range(start=df_pozo['Fecha'].min(), end=max_date, freq='D')
-    extended_df = pd.DataFrame({'Fecha': extended_dates})
-    extended_df = pd.merge(extended_df, df_pozo[['Fecha', 'AguaAcumulada Mbbl']], on='Fecha', how='left')
-    extended_df['AguaAcumulada Mbbl'].fillna(method='ffill', inplace=True)
-    extended_df['AguaAcumulada Mbbl'].fillna(max_value, inplace=True)
-    
-    # Agregar carry forward al DataFrame extendido
-    extended_df['AguaAcumulada Mbbl'] += carry_forward
-    
-    # Actualizar carry forward para el siguiente pozo
-    #carry_forward = extended_df['AguaAcumulada Mbbl'].iloc[-1]
-    
-    # Añadir la traza al gráfico
-    plot_AguaAc.add_trace(
-        go.Scatter(
-            x=extended_df['Fecha'],
-            y=extended_df['AguaAcumulada Mbbl'],
-            hoverinfo='x+y',
-            mode='none',
-            name=pozo,
-            fill='tonexty',
-            stackgroup='one'
-        ),
-    )
+    # Iterar sobre cada pozo único
+    for pozo in boton_pozoID:
+        # Filtrar datos para el pozo actual
+        df_pozo = df_filtro[df_filtro['Pozo_Oficial'] == pozo].copy()
+        
+        # Verificar si el pozo tiene datos y fechas válidas
+        if df_pozo['Fecha'].notna().any() and pd.notna(df_pozo['Fecha'].min()):
+            # Obtener el valor máximo de 'BrutoAcumulado Mbbl' para el pozo actual
+            max_value = df_pozo['AguaAcumulada Mbbl'].max() * 1.1
+            
+            # Crear un DataFrame extendido hasta la fecha más reciente
+            extended_dates = pd.date_range(start=df_pozo['Fecha'].min(), end=max_date, freq='D')
+            extended_df = pd.DataFrame({'Fecha': extended_dates})
+            extended_df = pd.merge(extended_df, df_pozo[['Fecha', 'AguaAcumulada Mbbl']], on='Fecha', how='left')
+            extended_df['AguaAcumulada Mbbl'].fillna(method='ffill', inplace=True)
+            extended_df['AguaAcumulada Mbbl'].fillna(max_value, inplace=True)
+            
+            # Agregar carry forward al DataFrame extendido
+            #extended_df['AceiteAcumulado Mbbl'] += carry_forward
+            
+            # Actualizar carry forward para el siguiente pozo
+            carry_forward = extended_df['AguaAcumulada Mbbl'].iloc[-1]
+            
+            # Añadir la traza al gráfico
+            plot_AguaAc.add_trace(
+                go.Scatter(
+                    x=extended_df['Fecha'],
+                    y=extended_df['AguaAcumulada Mbbl'],
+                    hoverinfo='x+y',
+                    mode='none',
+                    name=pozo,
+                    fill='tonexty',
+                    stackgroup='one'
+                ),
+            )
 
 # Diseño del gráfico
 plot_AguaAc.update_layout(
-    title="PRODUCCIÓN DE AGUA ACUMULADA",
+    title="PRODUCCIÓN ACUMULADA DE AGUA",
     width=800,
     height=250,
     paper_bgcolor="#DFF9FD",
-    margin=dict(l=0, r=0, t=40, b=0),    
-    yaxis=dict(title="Agua Ac (Mbbl)", side='left', showgrid=True, gridcolor='LightGray', gridwidth=1, zeroline=True, zerolinecolor='LightGray', zerolinewidth=1),
+    margin=dict(l=0, r=0, t=40, b=0),
+    yaxis=dict(title="Agua Acumulada Mbbl", side='left', showgrid=True, gridcolor='LightGray', gridwidth=1, zeroline=True, zerolinecolor='LightGray', zerolinewidth=1),
     xaxis=dict(title="Fecha", showgrid=True, gridcolor='LightGray', gridwidth=1, zeroline=True, zerolinecolor='Black', zerolinewidth=1),
     legend=dict(
         font=dict(
@@ -574,7 +620,7 @@ plot_AguaAc.update_layout(
 )
 
 # DISEÑO TITULO DE EJES
-plot_AguaAc.update_yaxes(title_text="Agua Acumulada (Mbbl)", secondary_y=False)
+plot_AguaAc.update_yaxes(title_text="Agua Acumulada Mbbl", secondary_y=False)
 
 #_________________________________________________________________________________
 
@@ -589,8 +635,8 @@ for pozo in df_filtro['Pozo_Oficial'].unique():
             y=df_pozo['AceiteDiario bpd'], 
             mode='lines+markers', 
             name=pozo,
-                   line=dict(dash='dot', width=2),
-                   marker=dict(size=8, opacity=0.8)),
+                    line=dict(dash='dot', width=2),
+                    marker=dict(size=8, opacity=0.8)),
         secondary_y=False,
     ) 
 
@@ -631,8 +677,8 @@ for pozo in df_filtro['Pozo_Oficial'].unique():
             y=df_pozo['AguaDiaria bpd'], 
             mode='lines+markers', 
             name=pozo,
-                   line=dict(dash='dot', width=2),
-                   marker=dict(size=8, opacity=0.8)),
+                    line=dict(dash='dot', width=2),
+                    marker=dict(size=8, opacity=0.8)),
         secondary_y=False,
     ) 
 
@@ -675,8 +721,8 @@ for pozo in df_filtro['Pozo_Oficial'].unique():
             y=df_pozo['GasDiario pcd'], 
             mode='lines+markers', 
             name=pozo,
-                   line=dict(dash='dot', width=2),
-                   marker=dict(size=8, opacity=0.8)),
+                    line=dict(dash='dot', width=2),
+                    marker=dict(size=8, opacity=0.8)),
         secondary_y=False,
     ) 
 
@@ -723,8 +769,8 @@ for pozo in df_filtro['Pozo_Oficial'].unique():
             y=df_pozo['AceiteAcumulado Mbbl'], 
             mode='lines+markers', 
             name=pozo,
-                   line=dict(dash='dot', width=2),
-                   marker=dict(size=8, opacity=0.8)),
+                    line=dict(dash='dot', width=2),
+                    marker=dict(size=8, opacity=0.8)),
         secondary_y=False,
     ) 
 
@@ -772,8 +818,8 @@ for pozo in df_filtro['Pozo_Oficial'].unique():
             y=df_pozo['AguaAcumulada Mbbl'], 
             mode='lines+markers', 
             name=pozo,
-                   line=dict(dash='dot', width=2),
-                   marker=dict(size=8, opacity=0.8)),
+                    line=dict(dash='dot', width=2),
+                    marker=dict(size=8, opacity=0.8)),
         secondary_y=False,
     ) 
 
@@ -821,8 +867,8 @@ for pozo in df_filtro['Pozo_Oficial'].unique():
             y=df_pozo['GasAcumulado MMpc'], 
             mode='lines+markers', 
             name=pozo,
-                   line=dict(dash='dot', width=2),
-                   marker=dict(size=8, opacity=0.8)),
+                    line=dict(dash='dot', width=2),
+                    marker=dict(size=8, opacity=0.8)),
         secondary_y=False,
     ) 
 
@@ -948,8 +994,6 @@ with tabs[2]:
         
     # with c3:
         
-    
-
 # Mostrar los DataFrames cargados
 # st.write("Datos de Alocada:")
 # st.write(df_filtro)
